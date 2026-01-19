@@ -160,7 +160,7 @@ public class RealtimeChannel : IRealtimeChannel
     private readonly Timer _rejoinTimer;
     private bool _isRejoining;
 
-    private List<Binding> _bindings = [];
+    private List<Binding> _bindings = new();
 
     /// <summary>
     /// Initializes a Channel - must call `Subscribe()` to receive events.
@@ -416,7 +416,7 @@ public class RealtimeChannel : IRealtimeChannel
     public IRealtimeChannel Register(PostgresChangesOptions postgresChangesOptions)
     {
         PostgresChangesOptions.Add(postgresChangesOptions);
-        
+
         BindPostgresChangesOptions(postgresChangesOptions);
         return this;
     }
@@ -508,7 +508,7 @@ public class RealtimeChannel : IRealtimeChannel
 
     /// <summary>
     /// Sends a `Push` request under this channel.
-    /// 
+    ///
     /// Maintains a buffer in the event push is called prior to the channel being joined.
     /// </summary>
     /// <param name="eventName"></param>
@@ -664,7 +664,7 @@ public class RealtimeChannel : IRealtimeChannel
         if (obj?.Payload == null) return;
 
         obj.Payload.Response?.change?.ForEach(BindIdPostgresChanges);
-        
+
         switch (obj.Payload.Status)
         {
             // A response was received from the channel
@@ -765,7 +765,7 @@ public class RealtimeChannel : IRealtimeChannel
     {
         var founded = _bindings.FirstOrDefault(b => options.Equals(b.Options));
         if (founded != null) return;
-        
+
         _bindings.Add(
             new Binding
             {
@@ -793,7 +793,7 @@ public class RealtimeChannel : IRealtimeChannel
         }
 
         BindPostgresChangesHandlerGeneric(listenType, handler);
-        
+
     }
 
     private void BindPostgresChangesHandlerGeneric(ListenType listenType, PostgresChangesHandler handler)
@@ -824,7 +824,7 @@ public class RealtimeChannel : IRealtimeChannel
     }
 
     /// <summary>
-    /// Try to invoke the handler properly based on event type and socket response 
+    /// Try to invoke the handler properly based on event type and socket response
     /// </summary>
     /// <param name="eventType"></param>
     /// <param name="response"></param>
@@ -849,11 +849,11 @@ public class RealtimeChannel : IRealtimeChannel
         {
             if (binding.ListenType != eventType) return;
             if (binding.Options == null || response.Payload == null || binding.Handler == null) return;
-            
+
             if (response.Payload.Ids.Contains(binding.Id)) binding.Handler.Invoke(this, response);
         });
     }
-    
+
     /// <summary>
     /// Remove handler from binding
     /// </summary>
