@@ -1,7 +1,6 @@
 ﻿using Supabase.Realtime.Socket;
-
-namespace Supabase.Realtime.Interfaces;
-
+namespace Supabase.Realtime.Interfaces
+{
 /// <summary>
 /// Contract for a socket response
 /// </summary>
@@ -31,4 +30,5 @@ public interface IRealtimeSocketResponse
     /// The topic.
     /// </summary>
     string? Topic { get; set; }
+}
 }

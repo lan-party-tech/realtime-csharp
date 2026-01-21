@@ -15,9 +15,8 @@ using Websocket.Client.Exceptions;
 using static Supabase.Realtime.Constants;
 
 #pragma warning disable CS1570
-
-namespace Supabase.Realtime;
-
+namespace Supabase.Realtime
+{
 /// <summary>
 /// Singleton that represents a Client connection to a Realtime Server.
 ///
@@ -465,4 +464,5 @@ public class Client : IRealtimeClient<RealtimeSocket, RealtimeChannel>
                 break;
         }
     }
+}
 }

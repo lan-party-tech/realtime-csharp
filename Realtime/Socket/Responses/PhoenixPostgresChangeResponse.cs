@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
-
-namespace Supabase.Realtime.Socket.Responses;
-
+namespace Supabase.Realtime.Socket.Responses
+{
 public class PhoenixPostgresChangeResponse
 {
     [JsonProperty("id")]
@@ -18,4 +17,5 @@ public class PhoenixPostgresChangeResponse
     
     [JsonProperty("table")]
     public string? table { get; set; }
+}
 }

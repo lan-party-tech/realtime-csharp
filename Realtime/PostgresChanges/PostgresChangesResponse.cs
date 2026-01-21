@@ -2,9 +2,8 @@
 using Newtonsoft.Json;
 using Supabase.Postgrest.Models;
 using Supabase.Realtime.Socket;
-
-namespace Supabase.Realtime.PostgresChanges;
-
+namespace Supabase.Realtime.PostgresChanges
+{
 /// <inheritdoc />
 public class PostgresChangesResponse<T> : SocketResponse<PostgresChangesPayload<T>> where T : class
 {
@@ -77,4 +76,5 @@ public class PostgresChangesPayload<T> where T : class
     
     [JsonProperty("ids")]
     public List<int?> Ids { get; set; }
+}
 }

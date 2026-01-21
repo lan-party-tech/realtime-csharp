@@ -3,9 +3,8 @@ using System;
 using System.Threading.Tasks;
 using Supabase.Realtime.Models;
 using static Supabase.Realtime.Constants;
-
-namespace Supabase.Realtime.Interfaces;
-
+namespace Supabase.Realtime.Interfaces
+{
 /// <summary>
 /// A contract representing a realtime broadcast
 /// </summary>
@@ -47,4 +46,5 @@ public interface IRealtimeBroadcast
     /// </summary>
     /// <param name="response"></param>
     internal void TriggerReceived(SocketResponse response);
+}
 }

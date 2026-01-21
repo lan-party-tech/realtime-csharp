@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
-namespace Supabase.Realtime.Converters;
-
+namespace Supabase.Realtime.Converters
+{
 internal class DateTimeConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
@@ -76,4 +75,5 @@ internal class DateTimeConverter : JsonConverter
     {
         throw new NotImplementedException();
     }
+}
 }

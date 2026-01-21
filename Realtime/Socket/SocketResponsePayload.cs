@@ -2,9 +2,8 @@
 using System;
 using System.Collections.Generic;
 using static Supabase.Realtime.Constants;
-
-namespace Supabase.Realtime.Socket;
-
+namespace Supabase.Realtime.Socket
+{
 /// <inheritdoc />
 public class SocketResponsePayload<T> : SocketResponsePayload where T : class
 {
@@ -156,4 +155,5 @@ public class SocketResponsePayload
     [JsonProperty("message")] public string? Message { get; set; }
 
     #endregion
+}
 }

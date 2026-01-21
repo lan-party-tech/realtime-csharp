@@ -6,9 +6,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Supabase.Postgrest.Attributes;
 using Supabase.Realtime.Converters;
-
-namespace Supabase.Realtime;
-
+namespace Supabase.Realtime
+{
 /// <summary>
 /// A custom resolver that handles mapping column names and property names as well
 /// as handling the conversion of Postgrest Ranges to a C# `Range`.
@@ -60,4 +59,5 @@ internal class CustomContractResolver : DefaultContractResolver
 
 		return prop;
 	}
+}
 }

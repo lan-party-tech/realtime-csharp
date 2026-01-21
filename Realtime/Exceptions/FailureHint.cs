@@ -1,8 +1,7 @@
 using System;
 using Websocket.Client;
-
-namespace Supabase.Realtime.Exceptions;
-
+namespace Supabase.Realtime.Exceptions
+{
 /// <summary>
 /// A failure hint
 /// </summary>
@@ -66,4 +65,5 @@ public static class FailureHint
             _ => Reason.Unknown
         };
     }
+}
 }

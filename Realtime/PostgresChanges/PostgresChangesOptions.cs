@@ -2,9 +2,8 @@
 using Newtonsoft.Json;
 using Supabase.Core.Attributes;
 using System.Collections.Generic;
-
-namespace Supabase.Realtime.PostgresChanges;
-
+namespace Supabase.Realtime.PostgresChanges
+{
 /// <summary>
 /// Handles a `postgres_changes` channel
 /// 
@@ -131,4 +130,5 @@ public class PostgresChangesOptions
             return hashCode;
         }
     }
+}
 }

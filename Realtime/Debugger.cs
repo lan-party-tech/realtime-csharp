@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using Supabase.Realtime.Exceptions;
 using Supabase.Realtime.Interfaces;
-
-namespace Supabase.Realtime;
-
+namespace Supabase.Realtime
+{
 /// <summary>
 /// A Singleton used for debug notifications
 /// </summary>
@@ -60,4 +59,5 @@ internal class Debugger : IRealtimeDebugger
         foreach (var l in _debugListeners.ToArray())
             l.Invoke(sender, message, exception);
     }
+}
 }

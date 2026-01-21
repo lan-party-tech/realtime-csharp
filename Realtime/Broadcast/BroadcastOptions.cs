@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
-
-namespace Supabase.Realtime.Broadcast;
-
+namespace Supabase.Realtime.Broadcast
+{
 /// <summary>
 /// Options 
 /// </summary>
@@ -29,4 +28,5 @@ public class BroadcastOptions
         BroadcastSelf = broadcastSelf;
         BroadcastAck = broadcastAck;
     }
+}
 }

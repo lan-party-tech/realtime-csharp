@@ -4,9 +4,8 @@ using System.Threading.Tasks;
 using Supabase.Realtime.Channel;
 using Supabase.Realtime.Models;
 using static Supabase.Realtime.Constants;
-
-namespace Supabase.Realtime.Interfaces;
-
+namespace Supabase.Realtime.Interfaces
+{
 /// <summary>
 /// Contract representing a Realtime Presence class
 /// </summary>
@@ -72,4 +71,5 @@ public interface IRealtimePresence
         
     internal void TriggerSync(SocketResponse response);
     internal void TriggerDiff(SocketResponse args);
+}
 }

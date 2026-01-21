@@ -1,8 +1,7 @@
 using Supabase.Realtime.Interfaces;
 using Supabase.Realtime.PostgresChanges;
-
-namespace Supabase.Realtime;
-
+namespace Supabase.Realtime
+{
 public class Binding
 {
     public PostgresChangesOptions? Options { get; set; }
@@ -12,4 +11,5 @@ public class Binding
     public PostgresChangesOptions.ListenType? ListenType { get; set; }
 
     public int? Id { get; set; }
+}
 }

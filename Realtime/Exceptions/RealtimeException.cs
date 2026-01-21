@@ -1,8 +1,7 @@
 using System;
 using Websocket.Client;
-
-namespace Supabase.Realtime.Exceptions;
-
+namespace Supabase.Realtime.Exceptions
+{
 /// <summary>
 /// An Exception thrown within <see cref="Realtime"/>
 /// </summary>
@@ -33,4 +32,5 @@ public class RealtimeException : Exception
         {
             Reason = FailureHint.Parse(info)
         };
+}
 }

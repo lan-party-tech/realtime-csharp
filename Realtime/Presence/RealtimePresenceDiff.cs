@@ -2,9 +2,8 @@
 using Supabase.Realtime.Models;
 using Supabase.Realtime.Socket;
 using System.Collections.Generic;
-
-namespace Supabase.Realtime.Presence;
-
+namespace Supabase.Realtime.Presence
+{
 /// <summary>
 /// Represents a presence_diff response
 /// </summary>
@@ -46,4 +45,5 @@ public class PresenceDiffPayloadMeta<TPresence> where TPresence : BasePresence
 	/// </summary>
 	[JsonProperty("metas")]
 	public List<TPresence>? Metas { get; set; }
+}
 }

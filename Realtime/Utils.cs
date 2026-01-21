@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
-namespace Supabase.Realtime;
-
+namespace Supabase.Realtime
+{
 internal static class Utils
 {
     /// <summary>
@@ -43,4 +42,5 @@ internal static class Utils
 
         return channel;
     }
+}
 }

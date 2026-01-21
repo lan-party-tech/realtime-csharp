@@ -3,9 +3,8 @@ using Supabase.Realtime.Socket;
 using System;
 using System.Collections.Generic;
 using System.Timers;
-
-namespace Supabase.Realtime.Channel;
-
+namespace Supabase.Realtime.Channel
+{
 /// <summary>
 /// Class representation of a single request sent to the Socket server.
 ///
@@ -202,4 +201,5 @@ public class Push : IRealtimePush<RealtimeChannel, SocketResponse>
     private void HandleTimeoutElapsed(object sender, ElapsedEventArgs e) => OnTimeout?.Invoke(this, null);
 
     private void CancelTimeout() => _timer.Stop();
+}
 }

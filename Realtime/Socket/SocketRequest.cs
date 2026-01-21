@@ -1,8 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Supabase.Realtime.Channel;
-
-namespace Supabase.Realtime.Socket;
-
+namespace Supabase.Realtime.Socket
+{
 /// <summary>
 /// Representation of a Socket Request, used by <see cref="Push"/>
 /// </summary>
@@ -43,4 +42,5 @@ public class SocketRequest
     /// </summary>
     [JsonProperty("join_ref", NullValueHandling = NullValueHandling.Ignore)]
     public string? JoinRef { get; set; }
+}
 }

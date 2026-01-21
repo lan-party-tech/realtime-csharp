@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
-
-namespace Supabase.Realtime.Socket.Responses;
-
+namespace Supabase.Realtime.Socket.Responses
+{
 /// <summary>
 /// A generic, internal phoenix server response
 /// </summary>
@@ -18,4 +17,5 @@ public class PhoenixResponse
     /// </summary>
     [JsonProperty("status")]
     public string? Status;
+}
 }

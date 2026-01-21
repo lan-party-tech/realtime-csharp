@@ -1,8 +1,7 @@
 ﻿using Supabase.Core.Attributes;
 using Supabase.Realtime.Socket;
-
-namespace Supabase.Realtime;
-
+namespace Supabase.Realtime
+{
 /// <summary>
 /// Shared constants for Realtime
 /// </summary>
@@ -238,4 +237,5 @@ public static class Constants
     /// The event name used to send an access_token to the Phoenix server
     /// </summary>
     public const string ChannelAccessToken = "access_token";
+}
 }

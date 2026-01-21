@@ -5,9 +5,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 [assembly: InternalsVisibleTo("RealtimeTests")]
-
-namespace Supabase.Realtime.Converters;
-
+namespace Supabase.Realtime.Converters
+{
 /// <summary>
 /// An int array converter that specifically parses Postgrest styled arrays `{1,2,3}` and `[1,2,3]` from strings
 /// into a <see cref="List{T}"/>.
@@ -84,4 +83,5 @@ public class IntArrayConverter : JsonConverter
                 return result;
         }
     }
+}
 }

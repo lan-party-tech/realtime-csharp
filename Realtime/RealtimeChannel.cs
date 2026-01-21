@@ -22,9 +22,8 @@ using Timer = System.Timers.Timer;
 // ReSharper disable InvalidXmlDocComment
 
 [assembly: InternalsVisibleTo("RealtimeTests")]
-
-namespace Supabase.Realtime;
-
+namespace Supabase.Realtime
+{
 /// <summary>
 /// Class representation of a channel subscription
 /// </summary>
@@ -865,4 +864,5 @@ public class RealtimeChannel : IRealtimeChannel
         if (binding == null) return;
         _bindings.Remove(binding);
     }
+}
 }

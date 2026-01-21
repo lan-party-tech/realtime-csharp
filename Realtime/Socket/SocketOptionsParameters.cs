@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
-
-namespace Supabase.Realtime.Socket;
-
+namespace Supabase.Realtime.Socket
+{
 /// <summary>
 /// Options to initialize a socket.
 /// </summary>
@@ -18,4 +17,5 @@ public class SocketOptionsParameters
     /// </summary>
     [JsonProperty("apikey")]
     public string? ApiKey { get; set; }
+}
 }

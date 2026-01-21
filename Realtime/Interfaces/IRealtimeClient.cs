@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 using Supabase.Core.Interfaces;
 using Supabase.Realtime.Exceptions;
 using static Supabase.Realtime.Constants;
-
-namespace Supabase.Realtime.Interfaces;
-
+namespace Supabase.Realtime.Interfaces
+{
 /// <summary>
 /// Contract representing a Realtime Client
 /// </summary>
@@ -132,4 +131,5 @@ public interface IRealtimeClient<TSocket, TChannel>: IGettableHeaders
     /// </summary>
     /// <param name="jwt"></param>
     void SetAuth(string jwt);
+}
 }

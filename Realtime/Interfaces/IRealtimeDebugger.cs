@@ -1,8 +1,7 @@
 using System;
 using Supabase.Realtime.Exceptions;
-
-namespace Supabase.Realtime.Interfaces;
-
+namespace Supabase.Realtime.Interfaces
+{
 /// <summary>
 /// Contract representing an internal debugger.
 /// </summary>
@@ -37,4 +36,5 @@ public interface IRealtimeDebugger
     /// <param name="message"></param>
     /// <param name="exception"></param>
     void Log(object sender, string message, Exception? exception = null);
+}
 }

@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
-
-namespace Supabase.Realtime.Models;
-
+namespace Supabase.Realtime.Models
+{
 /// <summary>
 /// Represents an arbitrary Presence response.
 /// </summary>
@@ -30,4 +29,5 @@ public class BasePresence
     /// </summary>
     /// <returns></returns>
     public bool ShouldSerializePhoenixPrevRef() => false;
+}
 }

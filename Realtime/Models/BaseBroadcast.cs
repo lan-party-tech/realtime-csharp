@@ -1,8 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
-
-namespace Supabase.Realtime.Models;
-
+namespace Supabase.Realtime.Models
+{
 /// <summary>
 /// Represents a Broadcast response with a modeled payload.
 /// </summary>
@@ -32,4 +31,5 @@ public class BaseBroadcast
 	/// </summary>
 	[JsonProperty("payload")]
 	public Dictionary<string, object>? Payload { get; set; }
+}
 }

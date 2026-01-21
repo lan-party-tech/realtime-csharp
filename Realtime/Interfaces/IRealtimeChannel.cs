@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 using Supabase.Realtime.Exceptions;
 using static Supabase.Realtime.Constants;
 using static Supabase.Realtime.PostgresChanges.PostgresChangesOptions;
-
-namespace Supabase.Realtime.Interfaces;
-
+namespace Supabase.Realtime.Interfaces
+{
 /// <summary>
 /// A contract representing a realtime channel
 /// </summary>
@@ -244,4 +243,5 @@ public interface IRealtimeChannel
     /// </summary>
     /// <returns></returns>
     IRealtimeChannel Unsubscribe();
+}
 }

@@ -3,9 +3,8 @@ using Newtonsoft.Json;
 using Supabase.Realtime.Broadcast;
 using Supabase.Realtime.PostgresChanges;
 using Supabase.Realtime.Presence;
-
-namespace Supabase.Realtime.Channel;
-
+namespace Supabase.Realtime.Channel
+{
 internal class JoinPush
 {
 	[JsonProperty("config")]
@@ -32,4 +31,5 @@ internal class JoinPush
 		[JsonProperty("postgres_changes", NullValueHandling = NullValueHandling.Ignore)]
 		public List<PostgresChangesOptions> PostgresChanges { get; set; } = new List<PostgresChangesOptions> { };
 	}
+}
 }

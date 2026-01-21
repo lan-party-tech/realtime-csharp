@@ -1,9 +1,8 @@
 ﻿using Newtonsoft.Json;
 using Supabase.Realtime.Interfaces;
 using static Supabase.Realtime.Constants;
-
-namespace Supabase.Realtime.Socket;
-
+namespace Supabase.Realtime.Socket
+{
 /// <summary>
 /// A SocketResponse with support for Generically typed Payload
 /// </summary>
@@ -87,4 +86,5 @@ public class SocketResponse : IRealtimeSocketResponse
 	/// </summary>
 	[JsonIgnore]
 	internal string? Json { get; set; }
+}
 }

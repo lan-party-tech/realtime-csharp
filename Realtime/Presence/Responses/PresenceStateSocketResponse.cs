@@ -2,9 +2,8 @@
 using Supabase.Realtime.Models;
 using Supabase.Realtime.Socket;
 using System.Collections.Generic;
-
-namespace Supabase.Realtime.Presence.Responses;
-
+namespace Supabase.Realtime.Presence.Responses
+{
 /// <inheritdoc />
 public class PresenceStateSocketResponse<TPresence> : SocketResponse<Dictionary<string, PresenceStatePayload<TPresence>>> 
     where TPresence : BasePresence
@@ -24,4 +23,5 @@ public class PresenceStatePayload<TPresence> where TPresence : BasePresence
     /// </summary>
     [JsonProperty("metas")]
     public List<TPresence>? Metas { get; set; }
+}
 }

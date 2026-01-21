@@ -5,9 +5,8 @@ using System.Threading.Tasks;
 using Supabase.Core.Interfaces;
 using Supabase.Realtime.Exceptions;
 using static Supabase.Realtime.Constants;
-
-namespace Supabase.Realtime.Interfaces;
-
+namespace Supabase.Realtime.Interfaces
+{
 /// <summary>
 /// Contract for a realtime socket.
 /// </summary>
@@ -143,4 +142,5 @@ public interface IRealtimeSocket: IGettableHeaders
     /// <param name="msgRef"></param>
     /// <returns></returns>
     internal string ReplyEventName(string msgRef);
+}
 }

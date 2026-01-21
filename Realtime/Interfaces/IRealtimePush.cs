@@ -1,8 +1,7 @@
 ﻿using Supabase.Realtime.Socket;
 using System;
-
-namespace Supabase.Realtime.Interfaces;
-
+namespace Supabase.Realtime.Interfaces
+{
 /// <summary>
 /// Contract representing a "Push" or an outgoing message to the socket server
 /// </summary>
@@ -84,4 +83,5 @@ public interface IRealtimePush<TChannel, TSocketResponse>
 	/// Send this push.
 	/// </summary>
 	void Send();
+}
 }

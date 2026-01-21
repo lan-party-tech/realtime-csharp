@@ -1,9 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-
-namespace Supabase.Realtime.Channel;
-
+namespace Supabase.Realtime.Channel
+{
 /// <summary>
 /// Channel Options
 /// </summary>
@@ -41,4 +40,5 @@ public class ChannelOptions
         SerializerSettings = serializerSettings;
         RetrieveAccessToken = retrieveAccessToken;
     }
+}
 }

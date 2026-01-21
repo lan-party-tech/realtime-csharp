@@ -4,9 +4,8 @@ using System.Diagnostics;
 using System.Globalization;
 using Newtonsoft.Json;
 using Supabase.Realtime.Socket;
-
-namespace Supabase.Realtime;
-
+namespace Supabase.Realtime
+{
 /// <summary>
 /// Options used when initializing a <see cref="Client"/>
 /// </summary>
@@ -70,4 +69,5 @@ public class ClientOptions
     /// Datetime format for JSON Deserialization of Models (Postgrest style)
     /// </summary>
     public string DateTimeFormat { get; set; } = @"yyyy'-'MM'-'dd' 'HH':'mm':'ss.FFFFFFK";
+}
 }
