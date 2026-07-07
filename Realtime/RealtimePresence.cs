@@ -116,7 +116,15 @@ namespace Supabase.Realtime
         void IRealtimePresence.TriggerSync(SocketResponse response)
         {
             _currentResponse = response;
-            SetState();
+            try
+            {
+                SetState();
+            }
+            catch (Exception ex)
+            {
+                // Surface parse failures instead of killing the socket message pipeline.
+                Debugger.Instance.Log(this, "Failed to apply presence state from socket response.", ex);
+            }
 
             NotifyPresenceEventHandlers(IRealtimePresence.EventType.Sync);
         }

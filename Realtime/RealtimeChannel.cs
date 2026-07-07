@@ -231,7 +231,7 @@ public class RealtimeChannel : IRealtimeChannel
             throw new InvalidOperationException(
                 "Register can only be called with presence options for a channel once.");
 
-        PresenceOptions = new PresenceOptions(presenceKey);
+        PresenceOptions = new PresenceOptions(presenceKey) { Enabled = true };
         var instance = new RealtimePresence<TPresenceResponse>(this, PresenceOptions, Options.SerializerSettings);
         _presence = instance;
 
@@ -497,8 +497,20 @@ public class RealtimeChannel : IRealtimeChannel
 
         NotifyStateChanged(ChannelState.Leaving);
 
-        var leavePush = new Push(Socket, this, ChannelEventLeave);
-        leavePush.Send();
+        // The leave must carry the join_ref of the join it terminates and a map payload;
+        // Phoenix silently discards it otherwise, leaving this client's presence tracked
+        // forever. The stock Push helper sets join_ref only on joins, so push directly.
+        if (Socket.IsConnected)
+        {
+            Socket.Push(new SocketRequest
+            {
+                Topic = Topic,
+                Event = ChannelEventLeave,
+                Payload = new Dictionary<string, string>(),
+                Ref = Socket.MakeMsgRef(),
+                JoinRef = JoinPush?.Ref,
+            });
+        }
 
         NotifyStateChanged(ChannelState.Closed, false);
 
@@ -725,7 +737,12 @@ public class RealtimeChannel : IRealtimeChannel
     /// <param name="message"></param>
     internal void HandleSocketMessage(SocketResponse message)
     {
-        if (message.Ref == JoinPush?.Ref) return;
+        // Supabase Realtime sends the initial presence_state with the SAME ref as the
+        // join request. The join-reply filter below must not swallow it, otherwise a
+        // late joiner never receives the roster of members already in the channel
+        // (presence diffs arrive with a null ref and were never affected).
+        if (message.Ref == JoinPush?.Ref && message.Event != EventType.PresenceState)
+            return;
 
         // If we don't ignore this event we'll end up with double callbacks.
         if (message._event == "*") return;
