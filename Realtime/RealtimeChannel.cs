@@ -532,6 +532,35 @@ public class RealtimeChannel : IRealtimeChannel
     }
 
     /// <summary>
+    /// Sends a broadcast payload straight to the socket without allocating a tracked <see cref="Push"/>.
+    ///
+    /// <see cref="Push"/> registers a socket message handler and a timeout timer that are only released
+    /// when a reply with a matching ref arrives; with `broadcastAck = false` no reply ever comes, so the
+    /// tracked path leaks one handler + timer per message. High-rate fire-and-forget streaming (and any
+    /// broadcast that does not want an ack) should use this instead.
+    ///
+    /// Returns false (message dropped, not buffered) when the channel is not joined or the socket is
+    /// disconnected — callers are expected to have a state-hydration path for missed messages.
+    /// </summary>
+    /// <param name="broadcastEventName"></param>
+    /// <param name="payload"></param>
+    public bool PushFireAndForget(string broadcastEventName, object payload)
+    {
+        if (!CanPush) return false;
+
+        Socket.Push(new SocketRequest
+        {
+            Topic = Topic,
+            Type = broadcastEventName,
+            Event = Core.Helpers.GetMappedToAttr(ChannelEventName.Broadcast).Mapping,
+            Payload = payload,
+            Ref = Socket.MakeMsgRef()
+        });
+
+        return true;
+    }
+
+    /// <summary>
     /// Sends an arbitrary payload with a given payload type (<see cref="ChannelEventName"/>)
     /// </summary>
     /// <param name="eventName"></param>

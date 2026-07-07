@@ -241,6 +241,11 @@ namespace Supabase.Realtime
 
                 if (state?.Payload == null) return;
 
+                // presence_state is the authoritative full roster (sent on join and rejoin) —
+                // drop stale entries such as members who left while this client was disconnected,
+                // otherwise they linger forever because their leave diff was never received.
+                CurrentState.Clear();
+
                 foreach (var item in state.Payload)
                     CurrentState[item.Key] = item.Value.Metas!;
             }
