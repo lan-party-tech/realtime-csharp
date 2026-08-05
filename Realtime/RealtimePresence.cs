@@ -116,7 +116,15 @@ namespace Supabase.Realtime
         void IRealtimePresence.TriggerSync(SocketResponse response)
         {
             _currentResponse = response;
-            SetState();
+            try
+            {
+                SetState();
+            }
+            catch (Exception ex)
+            {
+                // Surface parse failures instead of killing the socket message pipeline.
+                Debugger.Instance.Log(this, "Failed to apply presence state from socket response.", ex);
+            }
 
             NotifyPresenceEventHandlers(IRealtimePresence.EventType.Sync);
         }
@@ -240,6 +248,11 @@ namespace Supabase.Realtime
                         _serializerSettings)!;
 
                 if (state?.Payload == null) return;
+
+                // presence_state is the authoritative full roster (sent on join and rejoin) —
+                // drop stale entries such as members who left while this client was disconnected,
+                // otherwise they linger forever because their leave diff was never received.
+                CurrentState.Clear();
 
                 foreach (var item in state.Payload)
                     CurrentState[item.Key] = item.Value.Metas!;

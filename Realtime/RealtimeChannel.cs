@@ -231,7 +231,7 @@ public class RealtimeChannel : IRealtimeChannel
             throw new InvalidOperationException(
                 "Register can only be called with presence options for a channel once.");
 
-        PresenceOptions = new PresenceOptions(presenceKey);
+        PresenceOptions = new PresenceOptions(presenceKey) { Enabled = true };
         var instance = new RealtimePresence<TPresenceResponse>(this, PresenceOptions, Options.SerializerSettings);
         _presence = instance;
 
@@ -497,8 +497,20 @@ public class RealtimeChannel : IRealtimeChannel
 
         NotifyStateChanged(ChannelState.Leaving);
 
-        var leavePush = new Push(Socket, this, ChannelEventLeave);
-        leavePush.Send();
+        // The leave must carry the join_ref of the join it terminates and a map payload;
+        // Phoenix silently discards it otherwise, leaving this client's presence tracked
+        // forever. The stock Push helper sets join_ref only on joins, so push directly.
+        if (Socket.IsConnected)
+        {
+            Socket.Push(new SocketRequest
+            {
+                Topic = Topic,
+                Event = ChannelEventLeave,
+                Payload = new Dictionary<string, string>(),
+                Ref = Socket.MakeMsgRef(),
+                JoinRef = JoinPush?.Ref,
+            });
+        }
 
         NotifyStateChanged(ChannelState.Closed, false);
 
@@ -529,6 +541,35 @@ public class RealtimeChannel : IRealtimeChannel
         Enqueue(push);
 
         return push;
+    }
+
+    /// <summary>
+    /// Sends a broadcast payload straight to the socket without allocating a tracked <see cref="Push"/>.
+    ///
+    /// <see cref="Push"/> registers a socket message handler and a timeout timer that are only released
+    /// when a reply with a matching ref arrives; with `broadcastAck = false` no reply ever comes, so the
+    /// tracked path leaks one handler + timer per message. High-rate fire-and-forget streaming (and any
+    /// broadcast that does not want an ack) should use this instead.
+    ///
+    /// Returns false (message dropped, not buffered) when the channel is not joined or the socket is
+    /// disconnected — callers are expected to have a state-hydration path for missed messages.
+    /// </summary>
+    /// <param name="broadcastEventName"></param>
+    /// <param name="payload"></param>
+    public bool PushFireAndForget(string broadcastEventName, object payload)
+    {
+        if (!CanPush) return false;
+
+        Socket.Push(new SocketRequest
+        {
+            Topic = Topic,
+            Type = broadcastEventName,
+            Event = Core.Helpers.GetMappedToAttr(ChannelEventName.Broadcast).Mapping,
+            Payload = payload,
+            Ref = Socket.MakeMsgRef()
+        });
+
+        return true;
     }
 
     /// <summary>
@@ -696,7 +737,12 @@ public class RealtimeChannel : IRealtimeChannel
     /// <param name="message"></param>
     internal void HandleSocketMessage(SocketResponse message)
     {
-        if (message.Ref == JoinPush?.Ref) return;
+        // Supabase Realtime sends the initial presence_state with the SAME ref as the
+        // join request. The join-reply filter below must not swallow it, otherwise a
+        // late joiner never receives the roster of members already in the channel
+        // (presence diffs arrive with a null ref and were never affected).
+        if (message.Ref == JoinPush?.Ref && message.Event != EventType.PresenceState)
+            return;
 
         // If we don't ignore this event we'll end up with double callbacks.
         if (message._event == "*") return;
