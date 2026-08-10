@@ -9,7 +9,7 @@ internal class DateTimeConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {
-        throw new NotImplementedException();
+        return false;
     }
 
     public override bool CanWrite => false;

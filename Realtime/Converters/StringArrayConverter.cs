@@ -20,7 +20,7 @@ public class StringArrayConverter : JsonConverter
     public override bool CanWrite => false;
 
     /// <inheritdoc />
-    public override bool CanConvert(Type objectType) => throw new NotImplementedException();
+    public override bool CanConvert(Type objectType) => false;
 
     /// <inheritdoc />
     public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue,
