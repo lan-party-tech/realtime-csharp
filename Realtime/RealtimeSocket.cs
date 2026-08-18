@@ -343,7 +343,13 @@ namespace Supabase.Realtime
             {
                 _hasPendingHeartbeat = false;
                 Debugger.Instance.Log(this, "Socket Heartbeat Timeout: Attempting to re-establish a connection.");
-                _connection.Stop(WebSocketCloseStatus.EndpointUnavailable, "heartbeat timeout");
+                // Websocket.Client treats Stop() as a user-initiated close and permanently
+                // disables its automatic reconnection, so a single missed heartbeat reply
+                // left the socket dead until the client was recreated. Force the reconnect
+                // cycle instead; ReconnectionHappened restarts the heartbeat and channels
+                // rejoin via the Reconnect socket state.
+                _isReconnecting = true;
+                _ = _connection.Reconnect();
                 return;
             }
 
