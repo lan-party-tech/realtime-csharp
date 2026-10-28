@@ -157,7 +157,7 @@ public class RealtimeChannel : IRealtimeChannel
     private bool CanPush => IsJoined && Socket.IsConnected;
     private bool _hasJoinedOnce;
     private readonly Timer _rejoinTimer;
-    private bool _isRejoining;
+    private bool _retryEnabled;
 
     private List<Binding> _bindings = new();
 
@@ -186,9 +186,11 @@ public class RealtimeChannel : IRealtimeChannel
     /// <param name="state"></param>
     private void HandleSocketStateChanged(IRealtimeSocket _, SocketState state)
     {
-        if (state != SocketState.Reconnect || !IsSubscribed) return;
-
-        Rejoin();
+        if (!IsSubscribed) return;
+        if (state == SocketState.Reconnect)
+            Rejoin();
+        else if (state == SocketState.Close || state == SocketState.Error)
+            NotifyErrorOccurred(new RealtimeException("Realtime socket disconnected."));
     }
 
     /// <summary>
@@ -276,8 +278,15 @@ public class RealtimeChannel : IRealtimeChannel
     {
         State = state;
 
-        _isRejoining = shouldRejoin;
-        if (shouldRejoin)
+        if (state == ChannelState.Joined)
+        {
+            HasJoinedOnce = true;
+            IsSubscribed = true;
+            _exception = null;
+        }
+        // An error schedules a retry; it is not itself an in-flight retry.
+        _retryEnabled = shouldRejoin && (state == ChannelState.Closed || state == ChannelState.Errored);
+        if (_retryEnabled)
             _rejoinTimer.Start();
         else
             _rejoinTimer.Stop();
@@ -431,9 +440,7 @@ public class RealtimeChannel : IRealtimeChannel
         if (IsSubscribed)
             return Task.FromResult(this as IRealtimeChannel);
 
-        JoinPush = GenerateJoinPush();
         StateChangedHandler? channelCallback = null;
-        EventHandler? joinPushTimeoutCallback = null;
 
         channelCallback = (sender, state) =>
         {
@@ -444,8 +451,8 @@ public class RealtimeChannel : IRealtimeChannel
                     HasJoinedOnce = true;
                     IsSubscribed = true;
 
-                    sender.RemoveStateChangedHandler(channelCallback!);
-                    JoinPush.OnTimeout -= joinPushTimeoutCallback;
+                    if (channelCallback != null)
+                        sender.RemoveStateChangedHandler(channelCallback);
 
                     // Clear buffer
                     foreach (var item in _buffer)
@@ -457,23 +464,11 @@ public class RealtimeChannel : IRealtimeChannel
                 // Failure
                 case ChannelState.Closed:
                 case ChannelState.Errored:
-                    sender.RemoveStateChangedHandler(channelCallback!);
-                    JoinPush.OnTimeout -= joinPushTimeoutCallback;
-                    tsc.TrySetException(_exception);
+                    if (channelCallback != null)
+                        sender.RemoveStateChangedHandler(channelCallback);
+                    tsc.TrySetException(_exception ?? new RealtimeException("Channel closed before subscribing."));
                     break;
             }
-        };
-
-        // Throw an exception if there is a problem receiving a join response
-        joinPushTimeoutCallback = (_, _) =>
-        {
-            RemoveStateChangedHandler(channelCallback);
-            JoinPush.OnTimeout -= joinPushTimeoutCallback;
-
-            NotifyErrorOccurred(new RealtimeException("Push Timeout")
-            {
-                Reason = FailureHint.Reason.PushTimeout
-            });
         };
 
         AddStateChangedHandler(channelCallback);
@@ -483,7 +478,6 @@ public class RealtimeChannel : IRealtimeChannel
 
         // Init and send join.
         Rejoin(timeoutMs);
-        JoinPush.OnTimeout += joinPushTimeoutCallback;
 
         return tsc.Task;
     }
@@ -494,6 +488,7 @@ public class RealtimeChannel : IRealtimeChannel
     public IRealtimeChannel Unsubscribe()
     {
         IsSubscribed = false;
+        JoinPush?.Cancel();
 
         NotifyStateChanged(ChannelState.Leaving);
 
@@ -660,16 +655,10 @@ public class RealtimeChannel : IRealtimeChannel
     /// <param name="e"></param>
     private void HandleRejoinTimerElapsed(object sender, ElapsedEventArgs e)
     {
-        if (_isRejoining) return;
-        _isRejoining = true;
-
-        if (State != ChannelState.Closed && State != ChannelState.Errored)
+        if (!_retryEnabled || !Socket.IsConnected || (State != ChannelState.Closed && State != ChannelState.Errored))
             return;
 
         Debugger.Instance.Log(this, $"Rejoin Timer Elapsed: Attempting to rejoin [{Topic}]");
-
-        // Reset join push instance
-        JoinPush = GenerateJoinPush();
 
         Rejoin();
     }
@@ -684,10 +673,22 @@ public class RealtimeChannel : IRealtimeChannel
 
         // Remove handler if exists
         JoinPush?.RemoveMessageReceivedHandler(HandleJoinResponse);
+        JoinPush?.Cancel();
 
         JoinPush = GenerateJoinPush();
         JoinPush.AddMessageReceivedHandler(HandleJoinResponse);
+        JoinPush.OnTimeout += HandleJoinTimeout;
         JoinPush.Resend(timeoutMs);
+    }
+
+    private void HandleJoinTimeout(object? sender, EventArgs e)
+    {
+        if (!ReferenceEquals(sender, JoinPush) || !IsJoining) return;
+        JoinPush?.Cancel();
+        NotifyErrorOccurred(new RealtimeException("Push Timeout")
+        {
+            Reason = FailureHint.Reason.PushTimeout
+        });
     }
 
     /// <summary>
@@ -711,7 +712,6 @@ public class RealtimeChannel : IRealtimeChannel
             case PhoenixStatusOk:
                 // Disable Rejoin Timeout
                 _rejoinTimer.Stop();
-                _isRejoining = false;
 
                 var authPush = GenerateAuthPush();
                 authPush?.Send();
@@ -723,7 +723,6 @@ public class RealtimeChannel : IRealtimeChannel
                 break;
             case PhoenixStatusError:
                 _rejoinTimer.Stop();
-                _isRejoining = false;
 
                 NotifyErrorOccurred(new RealtimeException(message.Json)
                     { Reason = FailureHint.Reason.ChannelJoinFailure });
@@ -741,8 +740,15 @@ public class RealtimeChannel : IRealtimeChannel
         // join request. The join-reply filter below must not swallow it, otherwise a
         // late joiner never receives the roster of members already in the channel
         // (presence diffs arrive with a null ref and were never affected).
-        if (message.Ref == JoinPush?.Ref && message.Event != EventType.PresenceState)
+        if (message.Ref != null && message.Ref == JoinPush?.Ref && message._event == ChannelEventReply)
             return;
+
+        if (message._event == ChannelEventClose || message._event == ChannelEventError)
+        {
+            if (IsSubscribed || IsJoining)
+                NotifyErrorOccurred(new RealtimeException($"Realtime channel received {message._event}."));
+            return;
+        }
 
         // If we don't ignore this event we'll end up with double callbacks.
         if (message._event == "*") return;
@@ -756,7 +762,7 @@ public class RealtimeChannel : IRealtimeChannel
             // {"event":"system","payload":{"channel":"public:todos","extension":"postgres_changes","message":"Subscribed to PostgreSQL","status":"ok"}}
             // This switch case emits the join event after this has been received.
             case EventType.System:
-                if (!IsJoining) return;
+                if (!IsJoining && !IsJoined) return;
 
                 var obj = JsonConvert.DeserializeObject<SocketResponse<PhoenixResponse>>(message.Json!,
                     Options.SerializerSettings);
@@ -766,7 +772,8 @@ public class RealtimeChannel : IRealtimeChannel
                 switch (obj.Payload.Status)
                 {
                     case PhoenixStatusOk:
-                        NotifyStateChanged(ChannelState.Joined);
+                        if (IsJoining)
+                            NotifyStateChanged(ChannelState.Joined);
                         break;
                     case PhoenixStatusError:
                         NotifyErrorOccurred(new RealtimeException(message.Json)
