@@ -60,6 +60,11 @@ public class Client : IRealtimeClient<RealtimeSocket, RealtimeChannel>
         }
     }
 
+    // Contract construction uses reflection and emits member accessors. Reuse its thread-safe
+    // cache across socket messages; keep settings/converters fresh so current date options and
+    // caller customizations retain their existing per-request behavior.
+    private readonly CustomContractResolver _contractResolver = new();
+
     /// <summary>
     /// Custom Serializer resolvers and converters that will be used for encoding and decoding Postgrest JSON responses.
     ///
@@ -69,7 +74,7 @@ public class Client : IRealtimeClient<RealtimeSocket, RealtimeChannel>
     public JsonSerializerSettings SerializerSettings =>
         new()
         {
-            ContractResolver = new CustomContractResolver(),
+            ContractResolver = _contractResolver,
             Converters =
             {
                 // 2020-08-28T12:01:54.763231
