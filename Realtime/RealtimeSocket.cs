@@ -165,7 +165,10 @@ namespace Supabase.Realtime
             Debugger.Instance.Log(this, $"Socket State Change: {newState}");
 
             foreach (var handler in _socketEventHandlers.ToArray())
-                handler.Invoke(this, newState);
+            {
+                try { handler.Invoke(this, newState); }
+                catch (Exception exception) { ReportHandlerFailure("state", exception); }
+            }
         }
 
         /// <summary>
@@ -205,7 +208,10 @@ namespace Supabase.Realtime
         private void NotifyMessageReceived(SocketResponse heartbeat)
         {
             foreach (var handler in _messageEventHandlers.ToArray())
-                handler.Invoke(this, heartbeat);
+            {
+                try { handler.Invoke(this, heartbeat); }
+                catch (Exception exception) { ReportHandlerFailure("message", exception); }
+            }
         }
 
         /// <summary>
@@ -241,7 +247,18 @@ namespace Supabase.Realtime
         private void NotifyHeartbeatReceived(SocketResponse heartbeat)
         {
             foreach (var handler in _heartbeatEventHandlers.ToArray())
-                handler.Invoke(this, heartbeat);
+            {
+                try { handler.Invoke(this, heartbeat); }
+                catch (Exception exception) { ReportHandlerFailure("heartbeat", exception); }
+            }
+        }
+
+        private void ReportHandlerFailure(string kind, Exception exception)
+        {
+            // Application callbacks run on the transport receive path. One failed
+            // consumer (or diagnostic logger) must not disconnect every channel.
+            try { Debugger.Instance.Log(this, $"Socket callback failed: {kind}", exception); }
+            catch { /* A diagnostic consumer must not terminate reception either. */ }
         }
 
         /// <summary>
@@ -442,7 +459,8 @@ namespace Supabase.Realtime
                 Debugger.Instance.Log(this, $"Socket Message Received:\n\t{args.Text}");
 
                 // Send Separate heartbeat event
-                if (decoded!.Ref == _pendingHeartbeatRef)
+                if (decoded == null) return;
+                if (_pendingHeartbeatRef != null && decoded.Ref == _pendingHeartbeatRef)
                 {
                     NotifyHeartbeatReceived(decoded);
                     return;
@@ -468,6 +486,7 @@ namespace Supabase.Realtime
                         _connection.ReconnectTimeout = _options.ReconnectAfterInterval(++_reconnectionAttempts);
                         var nextInterval = DateTime.Now.AddSeconds(_connection.ReconnectTimeout.Value.Seconds).ToLocalTime();
                         Debugger.Instance.Log(this, $"Next reconnection attempt will occur at: {nextInterval}");
+                        NotifySocketStateChange(SocketState.Error);
                         break;
                     }
                 case false when disconnectionInfo is { Exception: not RealtimeException }:
@@ -482,6 +501,7 @@ namespace Supabase.Realtime
         private void HandleSocketClosed(DisconnectionInfo? disconnectionInfo = null)
         {
             Debugger.Instance.Log(this, $"Socket Closed at {DateTime.Now.ToLocalTime()}", disconnectionInfo?.Exception);
+            NotifySocketStateChange(SocketState.Close);
         }
 
         #endregion
