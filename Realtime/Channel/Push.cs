@@ -153,7 +153,10 @@ public class Push : IRealtimePush<RealtimeChannel, SocketResponse>
             && message is { Event: Constants.EventType.PresenceDiff };
         if (!isPresenceDiff && message.Ref != Ref) return; 
 
-        CancelTimeout();
+        // Database subscriptions need a second, system confirmation after the
+        // join ACK. The channel cancels this deadline when that arrives.
+        if (EventName != Constants.ChannelEventJoin || Channel.PostgresChangesOptions.Count == 0)
+            CancelTimeout();
         Response = message;
         NotifyMessageReceived(message);
 

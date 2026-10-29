@@ -158,6 +158,7 @@ public class RealtimeChannel : IRealtimeChannel
     private bool _hasJoinedOnce;
     private readonly Timer _rejoinTimer;
     private bool _retryEnabled;
+    private bool _subscriptionRequested;
 
     private List<Binding> _bindings = new();
 
@@ -186,7 +187,7 @@ public class RealtimeChannel : IRealtimeChannel
     /// <param name="state"></param>
     private void HandleSocketStateChanged(IRealtimeSocket _, SocketState state)
     {
-        if (!IsSubscribed) return;
+        if (!_subscriptionRequested) return;
         if (state == SocketState.Reconnect)
             Rejoin();
         else if (state == SocketState.Close || state == SocketState.Error)
@@ -277,6 +278,11 @@ public class RealtimeChannel : IRealtimeChannel
     private void NotifyStateChanged(ChannelState state, bool shouldRejoin = true)
     {
         State = state;
+
+        // A PostgreSQL join is only complete after its system confirmation.
+        // Keep the join deadline alive until then, including after its ACK.
+        if (state != ChannelState.Joining)
+            JoinPush?.Cancel();
 
         if (state == ChannelState.Joined)
         {
@@ -440,6 +446,8 @@ public class RealtimeChannel : IRealtimeChannel
         if (IsSubscribed)
             return Task.FromResult(this as IRealtimeChannel);
 
+        _subscriptionRequested = true;
+
         StateChangedHandler? channelCallback = null;
 
         channelCallback = (sender, state) =>
@@ -487,6 +495,7 @@ public class RealtimeChannel : IRealtimeChannel
     /// </summary>
     public IRealtimeChannel Unsubscribe()
     {
+        _subscriptionRequested = false;
         IsSubscribed = false;
         JoinPush?.Cancel();
 
