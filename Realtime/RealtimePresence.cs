@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -38,8 +39,8 @@ namespace Supabase.Realtime
         private readonly RealtimeChannel _channel;
         private readonly JsonSerializerSettings _serializerSettings;
 
-        private readonly Dictionary<IRealtimePresence.EventType, List<IRealtimePresence.PresenceEventHandler>>
-            _presenceEventListeners = new();
+        private readonly ConcurrentDictionary<IRealtimePresence.EventType,
+            HandlerList<IRealtimePresence.PresenceEventHandler>> _presenceEventListeners = new();
 
         /// <summary>
         /// Initializes a realtime presence helper class.
@@ -61,14 +62,10 @@ namespace Supabase.Realtime
         /// <param name="eventType"></param>
         /// <param name="handler"></param>
         public void AddPresenceEventHandler(IRealtimePresence.EventType eventType,
-            IRealtimePresence.PresenceEventHandler handler)
-        {
-            if (!_presenceEventListeners.ContainsKey(eventType))
-                _presenceEventListeners[eventType] = new List<IRealtimePresence.PresenceEventHandler>();
-
-            if (!_presenceEventListeners[eventType].Contains(handler))
-                _presenceEventListeners[eventType].Add(handler);
-        }
+            IRealtimePresence.PresenceEventHandler handler) =>
+            _presenceEventListeners
+                .GetOrAdd(eventType, _ => new HandlerList<IRealtimePresence.PresenceEventHandler>())
+                .Add(handler);
 
         /// <summary>
         /// Remove an event handler
@@ -78,9 +75,8 @@ namespace Supabase.Realtime
         public void RemovePresenceEventHandlers(IRealtimePresence.EventType eventType,
             IRealtimePresence.PresenceEventHandler handler)
         {
-            if (_presenceEventListeners.ContainsKey(eventType) &&
-                _presenceEventListeners[eventType].Contains(handler))
-                _presenceEventListeners[eventType].Remove(handler);
+            if (_presenceEventListeners.TryGetValue(eventType, out var handlers))
+                handlers.Remove(handler);
         }
 
         /// <summary>
@@ -89,10 +85,13 @@ namespace Supabase.Realtime
         /// <param name="eventType"></param>
         public void ClearPresenceEventHandlers(IRealtimePresence.EventType? eventType = null)
         {
-            if (eventType != null && _presenceEventListeners.TryGetValue(eventType.Value, out var list))
-                list.Clear();
+            // Lists are emptied in place and never dropped from the map, so a handler
+            // registered while this runs cannot land in a list nothing reads any more.
+            if (eventType != null && _presenceEventListeners.TryGetValue(eventType.Value, out var handlers))
+                handlers.Clear();
             else
-                _presenceEventListeners.Clear();
+                foreach (var registered in _presenceEventListeners.Values)
+                    registered.Clear();
         }
 
         /// <summary>
@@ -101,9 +100,9 @@ namespace Supabase.Realtime
         /// <param name="eventType"></param>
         private void NotifyPresenceEventHandlers(IRealtimePresence.EventType eventType)
         {
-            if (!_presenceEventListeners.ContainsKey(eventType)) return;
+            if (!_presenceEventListeners.TryGetValue(eventType, out var handlers)) return;
 
-            foreach (var handler in _presenceEventListeners[eventType].ToArray())
+            foreach (var handler in handlers.Snapshot)
                 handler.Invoke(this, eventType);
         }
 

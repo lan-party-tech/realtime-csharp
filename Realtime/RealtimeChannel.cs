@@ -150,9 +150,9 @@ public class RealtimeChannel : IRealtimeChannel
     private IRealtimeBroadcast? _broadcast;
     private RealtimeException? _exception;
 
-    private readonly List<StateChangedHandler> _stateChangedHandlers = new();
-    private readonly List<MessageReceivedHandler> _messageReceivedHandlers = new();
-    private readonly List<ErrorEventHandler> _errorEventHandlers = new();
+    private readonly HandlerList<StateChangedHandler> _stateChangedHandlers = new();
+    private readonly HandlerList<MessageReceivedHandler> _messageReceivedHandlers = new();
+    private readonly HandlerList<ErrorEventHandler> _errorEventHandlers = new();
 
     private bool CanPush => IsJoined && Socket.IsConnected;
     private bool _hasJoinedOnce;
@@ -248,21 +248,15 @@ public class RealtimeChannel : IRealtimeChannel
     /// Registers a state changed listener relative to this channel. Called when channel state changes.
     /// </summary>
     /// <param name="stateChangedHandler"></param>
-    public void AddStateChangedHandler(StateChangedHandler stateChangedHandler)
-    {
-        if (!_stateChangedHandlers.Contains(stateChangedHandler))
-            _stateChangedHandlers.Add(stateChangedHandler);
-    }
+    public void AddStateChangedHandler(StateChangedHandler stateChangedHandler) =>
+        _stateChangedHandlers.Add(stateChangedHandler);
 
     /// <summary>
     /// Removes a channel state changed listener
     /// </summary>
     /// <param name="stateChangedHandler"></param>
-    public void RemoveStateChangedHandler(StateChangedHandler stateChangedHandler)
-    {
-        if (_stateChangedHandlers.Contains(stateChangedHandler))
-            _stateChangedHandlers.Remove(stateChangedHandler);
-    }
+    public void RemoveStateChangedHandler(StateChangedHandler stateChangedHandler) =>
+        _stateChangedHandlers.Remove(stateChangedHandler);
 
     /// <summary>
     /// Clears all channel state changed listeners
@@ -297,7 +291,7 @@ public class RealtimeChannel : IRealtimeChannel
         else
             _rejoinTimer.Stop();
 
-        foreach (var handler in _stateChangedHandlers.ToArray())
+        foreach (var handler in _stateChangedHandlers.Snapshot)
             handler.Invoke(this, state);
     }
 
@@ -305,21 +299,15 @@ public class RealtimeChannel : IRealtimeChannel
     /// Registers a message received listener, called when a socket message is received for this channel.
     /// </summary>
     /// <param name="messageReceivedHandler"></param>
-    public void AddMessageReceivedHandler(MessageReceivedHandler messageReceivedHandler)
-    {
-        if (!_messageReceivedHandlers.Contains(messageReceivedHandler))
-            _messageReceivedHandlers.Add(messageReceivedHandler);
-    }
+    public void AddMessageReceivedHandler(MessageReceivedHandler messageReceivedHandler) =>
+        _messageReceivedHandlers.Add(messageReceivedHandler);
 
     /// <summary>
     /// Removes a message received listener.
     /// </summary>
     /// <param name="messageReceivedHandler"></param>
-    public void RemoveMessageReceivedHandler(MessageReceivedHandler messageReceivedHandler)
-    {
-        if (_messageReceivedHandlers.Contains(messageReceivedHandler))
-            _messageReceivedHandlers.Remove(messageReceivedHandler);
-    }
+    public void RemoveMessageReceivedHandler(MessageReceivedHandler messageReceivedHandler) =>
+        _messageReceivedHandlers.Remove(messageReceivedHandler);
 
     /// <summary>
     /// Clears message received listeners.
@@ -333,7 +321,7 @@ public class RealtimeChannel : IRealtimeChannel
     /// <param name="message"></param>
     private void NotifyMessageReceived(SocketResponse message)
     {
-        foreach (var handler in _messageReceivedHandlers.ToArray())
+        foreach (var handler in _messageReceivedHandlers.Snapshot)
             handler.Invoke(this, message);
     }
 
@@ -369,22 +357,16 @@ public class RealtimeChannel : IRealtimeChannel
     /// Adds an error event handler.
     /// </summary>
     /// <param name="handler"></param>
-    public void AddErrorHandler(ErrorEventHandler handler)
-    {
-        if (!_errorEventHandlers.Contains(handler))
-            _errorEventHandlers.Add(handler);
-    }
+    public void AddErrorHandler(ErrorEventHandler handler) =>
+        _errorEventHandlers.Add(handler);
 
     /// <summary>
     /// Removes an error event handler
     /// </summary>
     /// <param name="handler"></param>
     /// <exception cref="NotImplementedException"></exception>
-    public void RemoveErrorHandler(ErrorEventHandler handler)
-    {
-        if (_errorEventHandlers.Contains(handler))
-            _errorEventHandlers.Remove(handler);
-    }
+    public void RemoveErrorHandler(ErrorEventHandler handler) =>
+        _errorEventHandlers.Remove(handler);
 
     /// <summary>
     /// Clears Error Event Handlers
@@ -398,7 +380,7 @@ public class RealtimeChannel : IRealtimeChannel
 
         NotifyStateChanged(ChannelState.Errored);
 
-        foreach (var handler in _errorEventHandlers)
+        foreach (var handler in _errorEventHandlers.Snapshot)
             handler.Invoke(this, exception);
     }
 

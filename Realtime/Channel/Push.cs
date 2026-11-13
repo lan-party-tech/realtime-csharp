@@ -1,7 +1,6 @@
 ﻿using Supabase.Realtime.Interfaces;
 using Supabase.Realtime.Socket;
 using System;
-using System.Collections.Generic;
 using System.Timers;
 namespace Supabase.Realtime.Channel
 {
@@ -64,7 +63,7 @@ public class Push : IRealtimePush<RealtimeChannel, SocketResponse>
     /// <summary>
     /// Handlers for notifications of message events.
     /// </summary>
-    private readonly List<IRealtimePush<RealtimeChannel, SocketResponse>.MessageEventHandler> _messageEventHandlers = new();
+    private readonly HandlerList<IRealtimePush<RealtimeChannel, SocketResponse>.MessageEventHandler> _messageEventHandlers = new();
 
     /// <summary>
     /// Initializes a single request that will be `Pushed` to the Socket server.
@@ -167,25 +166,15 @@ public class Push : IRealtimePush<RealtimeChannel, SocketResponse>
     /// Adds a listener to be notified when a message is received.
     /// </summary>
     /// <param name="handler"></param>
-    public void AddMessageReceivedHandler(IRealtimePush<RealtimeChannel, SocketResponse>.MessageEventHandler handler)
-    {
-        if (_messageEventHandlers.Contains(handler))
-            return;
-
+    public void AddMessageReceivedHandler(IRealtimePush<RealtimeChannel, SocketResponse>.MessageEventHandler handler) =>
         _messageEventHandlers.Add(handler);
-    }
         
     /// <summary>
     /// Removes a specified listener from messages received.
     /// </summary>
     /// <param name="handler"></param>
-    public void RemoveMessageReceivedHandler(IRealtimePush<RealtimeChannel, SocketResponse>.MessageEventHandler handler)
-    {
-        if (!_messageEventHandlers.Contains(handler))
-            return;
-
+    public void RemoveMessageReceivedHandler(IRealtimePush<RealtimeChannel, SocketResponse>.MessageEventHandler handler) =>
         _messageEventHandlers.Remove(handler);
-    }
         
     /// <summary>
     /// Notifies all listeners that the socket has received a message
@@ -193,7 +182,7 @@ public class Push : IRealtimePush<RealtimeChannel, SocketResponse>
     /// <param name="messageResponse"></param>
     private void NotifyMessageReceived(SocketResponse messageResponse)
     {
-        foreach (var handler in _messageEventHandlers.ToArray())
+        foreach (var handler in _messageEventHandlers.Snapshot)
             handler.Invoke(this, messageResponse);
     }
         
