@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Supabase.Realtime.Broadcast;
@@ -26,7 +25,7 @@ namespace Supabase.Realtime
 
         private SocketResponse? _lastSocketResponse;
 
-        private readonly List<IRealtimeBroadcast.BroadcastEventHandler> _broadcastEventHandlers = new();
+        private readonly HandlerList<IRealtimeBroadcast.BroadcastEventHandler> _broadcastEventHandlers = new();
 
         /// <summary>
         /// The last received broadcast.
@@ -60,21 +59,15 @@ namespace Supabase.Realtime
         /// Adds a broadcast event listener.
         /// </summary>
         /// <param name="broadcastEventHandler"></param>
-        public void AddBroadcastEventHandler(IRealtimeBroadcast.BroadcastEventHandler broadcastEventHandler)
-        {
-            if (!_broadcastEventHandlers.Contains(broadcastEventHandler))
-                _broadcastEventHandlers.Add(broadcastEventHandler);
-        }
+        public void AddBroadcastEventHandler(IRealtimeBroadcast.BroadcastEventHandler broadcastEventHandler) =>
+            _broadcastEventHandlers.Add(broadcastEventHandler);
 
         /// <summary>
         /// Removes a broadcast event listener.
         /// </summary>
         /// <param name="broadcastEventHandler"></param>
-        public void RemoveBroadcastEventHandler(IRealtimeBroadcast.BroadcastEventHandler broadcastEventHandler)
-        {
-            if (_broadcastEventHandlers.Contains(broadcastEventHandler))
-                _broadcastEventHandlers.Remove(broadcastEventHandler);
-        }
+        public void RemoveBroadcastEventHandler(IRealtimeBroadcast.BroadcastEventHandler broadcastEventHandler) =>
+            _broadcastEventHandlers.Remove(broadcastEventHandler);
 
         /// <summary>
         /// Clears all broadcast event listeners
@@ -84,7 +77,7 @@ namespace Supabase.Realtime
 
         private void NotifyBroadcastEventHandlers()
         {
-            foreach (var handler in _broadcastEventHandlers.ToArray())
+            foreach (var handler in _broadcastEventHandlers.Snapshot)
                 handler.Invoke(this, Current());
         }
 

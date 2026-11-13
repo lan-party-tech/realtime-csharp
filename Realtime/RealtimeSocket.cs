@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -54,10 +53,10 @@ namespace Supabase.Realtime
         /// </summary>
         internal Dictionary<string, string> Headers => GetHeaders != null ? GetHeaders().MergeLeft(_options.Headers) : _options.Headers;
 
-        private readonly List<IRealtimeSocket.StateEventHandler> _socketEventHandlers = new();
-        private readonly List<IRealtimeSocket.MessageEventHandler> _messageEventHandlers = new();
-        private readonly List<IRealtimeSocket.HeartbeatEventHandler> _heartbeatEventHandlers = new();
-        private readonly List<IRealtimeSocket.ErrorEventHandler> _errorEventHandlers = new();
+        private readonly HandlerList<IRealtimeSocket.StateEventHandler> _socketEventHandlers = new();
+        private readonly HandlerList<IRealtimeSocket.MessageEventHandler> _messageEventHandlers = new();
+        private readonly HandlerList<IRealtimeSocket.HeartbeatEventHandler> _heartbeatEventHandlers = new();
+        private readonly HandlerList<IRealtimeSocket.ErrorEventHandler> _errorEventHandlers = new();
 
         private readonly string _endpoint;
         private readonly ClientOptions _options;
@@ -138,21 +137,15 @@ namespace Supabase.Realtime
         /// Adds a listener to be notified when the socket state changes.
         /// </summary>
         /// <param name="handler"></param>
-        public void AddStateChangedHandler(IRealtimeSocket.StateEventHandler handler)
-        {
-            if (!_socketEventHandlers.Contains(handler))
-                _socketEventHandlers.Add(handler);
-        }
+        public void AddStateChangedHandler(IRealtimeSocket.StateEventHandler handler) =>
+            _socketEventHandlers.Add(handler);
 
         /// <summary>
         /// Removes a specified listener from socket state changes.
         /// </summary>
         /// <param name="handler"></param>
-        public void RemoveStateChangedHandler(IRealtimeSocket.StateEventHandler handler)
-        {
-            if (_socketEventHandlers.Contains(handler))
-                _socketEventHandlers.Remove(handler);
-        }
+        public void RemoveStateChangedHandler(IRealtimeSocket.StateEventHandler handler) =>
+            _socketEventHandlers.Remove(handler);
 
         /// <summary>
         /// Notifies all listeners that the socket state has changed.
@@ -160,11 +153,11 @@ namespace Supabase.Realtime
         /// <param name="newState"></param>
         private void NotifySocketStateChange(SocketState newState)
         {
-            if (!_socketEventHandlers.Any()) return;
+            if (_socketEventHandlers.Snapshot.Length == 0) return;
 
             Debugger.Instance.Log(this, $"Socket State Change: {newState}");
 
-            foreach (var handler in _socketEventHandlers.ToArray())
+            foreach (var handler in _socketEventHandlers.Snapshot)
             {
                 try { handler.Invoke(this, newState); }
                 catch (Exception exception) { ReportHandlerFailure("state", exception); }
@@ -181,25 +174,15 @@ namespace Supabase.Realtime
         /// Adds a listener to be notified when a message is received.
         /// </summary>
         /// <param name="handler"></param>
-        public void AddMessageReceivedHandler(IRealtimeSocket.MessageEventHandler handler)
-        {
-            if (_messageEventHandlers.Contains(handler))
-                return;
-
+        public void AddMessageReceivedHandler(IRealtimeSocket.MessageEventHandler handler) =>
             _messageEventHandlers.Add(handler);
-        }
 
         /// <summary>
         /// Removes a specified listener from messages received.
         /// </summary>
         /// <param name="handler"></param>
-        public void RemoveMessageReceivedHandler(IRealtimeSocket.MessageEventHandler handler)
-        {
-            if (!_messageEventHandlers.Contains(handler))
-                return;
-
+        public void RemoveMessageReceivedHandler(IRealtimeSocket.MessageEventHandler handler) =>
             _messageEventHandlers.Remove(handler);
-        }
 
         /// <summary>
         /// Notifies all listeners that the socket has received a message
@@ -207,7 +190,7 @@ namespace Supabase.Realtime
         /// <param name="heartbeat"></param>
         private void NotifyMessageReceived(SocketResponse heartbeat)
         {
-            foreach (var handler in _messageEventHandlers.ToArray())
+            foreach (var handler in _messageEventHandlers.Snapshot)
             {
                 try { handler.Invoke(this, heartbeat); }
                 catch (Exception exception) { ReportHandlerFailure("message", exception); }
@@ -224,21 +207,15 @@ namespace Supabase.Realtime
         /// Adds a listener to be notified when a message is received.
         /// </summary>
         /// <param name="handler"></param>
-        public void AddHeartbeatHandler(IRealtimeSocket.HeartbeatEventHandler handler)
-        {
-            if (!_heartbeatEventHandlers.Contains(handler))
-                _heartbeatEventHandlers.Add(handler);
-        }
+        public void AddHeartbeatHandler(IRealtimeSocket.HeartbeatEventHandler handler) =>
+            _heartbeatEventHandlers.Add(handler);
 
         /// <summary>
         /// Removes a specified listener from messages received.
         /// </summary>
         /// <param name="handler"></param>
-        public void RemoveHeartbeatHandler(IRealtimeSocket.HeartbeatEventHandler handler)
-        {
-            if (_heartbeatEventHandlers.Contains(handler))
-                _heartbeatEventHandlers.Remove(handler);
-        }
+        public void RemoveHeartbeatHandler(IRealtimeSocket.HeartbeatEventHandler handler) =>
+            _heartbeatEventHandlers.Remove(handler);
 
         /// <summary>
         /// Notifies all listeners that the socket has received a heartbeat
@@ -246,7 +223,7 @@ namespace Supabase.Realtime
         /// <param name="heartbeat"></param>
         private void NotifyHeartbeatReceived(SocketResponse heartbeat)
         {
-            foreach (var handler in _heartbeatEventHandlers.ToArray())
+            foreach (var handler in _heartbeatEventHandlers.Snapshot)
             {
                 try { handler.Invoke(this, heartbeat); }
                 catch (Exception exception) { ReportHandlerFailure("heartbeat", exception); }
@@ -271,22 +248,16 @@ namespace Supabase.Realtime
         /// Adds an error event handler.
         /// </summary>
         /// <param name="handler"></param>
-        public void AddErrorHandler(IRealtimeSocket.ErrorEventHandler handler)
-        {
-            if (!_errorEventHandlers.Contains(handler))
-                _errorEventHandlers.Add(handler);
-        }
+        public void AddErrorHandler(IRealtimeSocket.ErrorEventHandler handler) =>
+            _errorEventHandlers.Add(handler);
 
         /// <summary>
         /// Removes an error event handler
         /// </summary>
         /// <param name="handler"></param>
         /// <exception cref="NotImplementedException"></exception>
-        public void RemoveErrorHandler(IRealtimeSocket.ErrorEventHandler handler)
-        {
-            if (_errorEventHandlers.Contains(handler))
-                _errorEventHandlers.Remove(handler);
-        }
+        public void RemoveErrorHandler(IRealtimeSocket.ErrorEventHandler handler) =>
+            _errorEventHandlers.Remove(handler);
 
         /// <summary>
         /// Clears Error Event Handlers
@@ -298,7 +269,7 @@ namespace Supabase.Realtime
         {
             NotifySocketStateChange(SocketState.Error);
 
-            foreach (var handler in _errorEventHandlers.ToArray())
+            foreach (var handler in _errorEventHandlers.Snapshot)
                 handler.Invoke(this, exception);
         }
 
