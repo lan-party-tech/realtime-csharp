@@ -60,6 +60,11 @@ public class Client : IRealtimeClient<RealtimeSocket, RealtimeChannel>
         }
     }
 
+    // Contract construction uses reflection and emits member accessors. Reuse its thread-safe
+    // cache across socket messages; keep settings/converters fresh so current date options and
+    // caller customizations retain their existing per-request behavior.
+    private readonly CustomContractResolver _contractResolver = new();
+
     /// <summary>
     /// Custom Serializer resolvers and converters that will be used for encoding and decoding Postgrest JSON responses.
     ///
@@ -69,7 +74,7 @@ public class Client : IRealtimeClient<RealtimeSocket, RealtimeChannel>
     public JsonSerializerSettings SerializerSettings =>
         new()
         {
-            ContractResolver = new CustomContractResolver(),
+            ContractResolver = _contractResolver,
             Converters =
             {
                 // 2020-08-28T12:01:54.763231
@@ -398,13 +403,14 @@ public class Client : IRealtimeClient<RealtimeSocket, RealtimeChannel>
     /// <param name="channel"></param>
     public void Remove(RealtimeChannel channel)
     {
-        if (_subscriptions.ContainsKey(channel.Topic))
-        {
-            if (channel.IsJoined)
-                channel.Unsubscribe();
-
+        // A joining/errored subscription still owns pending requests and retry
+        // timers. Cancel those too, so leaving a room cannot resurrect its channel.
+        channel.Unsubscribe();
+        // A delayed cleanup for an old room visit must not evict a newer channel
+        // that has since been registered under the same topic.
+        if (_subscriptions.TryGetValue(channel.Topic, out var current)
+            && ReferenceEquals(current, channel))
             _subscriptions.Remove(channel.Topic);
-        }
     }
 
     /// <summary>

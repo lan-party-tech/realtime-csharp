@@ -132,6 +132,7 @@ public class Push : IRealtimePush<RealtimeChannel, SocketResponse>
     internal void StartTimeout()
     {
         _timer.Stop();
+        _timer.Interval = _timeoutMs;
         _timer.Start();
         Ref = _socket.MakeMsgRef();
         _msgRefEvent = _socket.ReplyEventName(Ref);
@@ -148,10 +149,14 @@ public class Push : IRealtimePush<RealtimeChannel, SocketResponse>
         // {"ref":"bd07efe5-ca06-4257-b080-79779c6f76c4","event":"phx_reply","payload":{"status":"ok","response":{}},"topic":"realtime:online-users"}
         // the message was used to stop timeout handler
         // All tests still work on version before 2.34.21
-        var isPresenceDiff = message is { Event: Constants.EventType.PresenceDiff };
+        var isPresenceDiff = EventName != Constants.ChannelEventJoin
+            && message is { Event: Constants.EventType.PresenceDiff };
         if (!isPresenceDiff && message.Ref != Ref) return; 
 
-        CancelTimeout();
+        // Database subscriptions need a second, system confirmation after the
+        // join ACK. The channel cancels this deadline when that arrives.
+        if (EventName != Constants.ChannelEventJoin || Channel.PostgresChangesOptions.Count == 0)
+            CancelTimeout();
         Response = message;
         NotifyMessageReceived(message);
 
@@ -198,7 +203,18 @@ public class Push : IRealtimePush<RealtimeChannel, SocketResponse>
     public void ClearMessageReceivedHandler() =>
         _messageEventHandlers.Clear();
 
-    private void HandleTimeoutElapsed(object sender, ElapsedEventArgs e) => OnTimeout?.Invoke(this, null);
+    private void HandleTimeoutElapsed(object sender, ElapsedEventArgs e)
+    {
+        Cancel();
+        OnTimeout?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Stop a superseded request and detach its socket listener.</summary>
+    public void Cancel()
+    {
+        CancelTimeout();
+        _socket.RemoveMessageReceivedHandler(HandleSocketMessageReceived);
+    }
 
     private void CancelTimeout() => _timer.Stop();
 }
