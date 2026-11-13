@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Supabase.Realtime.Exceptions;
 using Supabase.Realtime.Interfaces;
 namespace Supabase.Realtime
@@ -9,38 +8,30 @@ namespace Supabase.Realtime
 /// </summary>
 internal class Debugger : IRealtimeDebugger
 {
-    private static Debugger? _instance { get; set; }
-
     /// <summary>
     /// Returns the Singleton Instance.
     /// </summary>
-    public static Debugger Instance => _instance ??= new Debugger();
+    public static Debugger Instance { get; } = new Debugger();
 
     private Debugger()
     {
     }
 
-    private readonly List<IRealtimeDebugger.DebugEventHandler> _debugListeners = new();
+    private readonly HandlerList<IRealtimeDebugger.DebugEventHandler> _debugListeners = new();
 
     /// <summary>
     /// Adds a debug listener
     /// </summary>
     /// <param name="handler"></param>
-    public void AddDebugHandler(IRealtimeDebugger.DebugEventHandler handler)
-    {
-        if (!_debugListeners.Contains(handler))
-            _debugListeners.Add(handler);
-    }
+    public void AddDebugHandler(IRealtimeDebugger.DebugEventHandler handler) =>
+        _debugListeners.Add(handler);
 
     /// <summary>
     /// Removes a debug handler.
     /// </summary>
     /// <param name="handler"></param>
-    public void RemoveDebugHandler(IRealtimeDebugger.DebugEventHandler handler)
-    {
-        if (_debugListeners.Contains(handler))
-            _debugListeners.Remove(handler);
-    }
+    public void RemoveDebugHandler(IRealtimeDebugger.DebugEventHandler handler) =>
+        _debugListeners.Remove(handler);
 
     /// <summary>
     /// Clears debug handlers.
@@ -56,7 +47,7 @@ internal class Debugger : IRealtimeDebugger
     /// <param name="exception"></param>
     public void Log(object sender, string message, Exception? exception = null)
     {
-        foreach (var l in _debugListeners.ToArray())
+        foreach (var l in _debugListeners.Snapshot)
             l.Invoke(sender, message, exception);
     }
 }

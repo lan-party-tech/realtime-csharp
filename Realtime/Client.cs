@@ -97,7 +97,7 @@ public class Client : IRealtimeClient<RealtimeSocket, RealtimeChannel>
     /// <summary>
     /// Handlers for notifications of state changes.
     /// </summary>
-    private readonly List<IRealtimeClient<RealtimeSocket, RealtimeChannel>.SocketStateEventHandler>
+    private readonly HandlerList<IRealtimeClient<RealtimeSocket, RealtimeChannel>.SocketStateEventHandler>
         _socketEventHandlers = new();
 
     /// <summary>
@@ -229,25 +229,15 @@ public class Client : IRealtimeClient<RealtimeSocket, RealtimeChannel>
     /// Adds a listener to be notified when the socket state changes.
     /// </summary>
     public void AddStateChangedHandler(
-        IRealtimeClient<RealtimeSocket, RealtimeChannel>.SocketStateEventHandler handler)
-    {
-        if (_socketEventHandlers.Contains(handler))
-            return;
-
+        IRealtimeClient<RealtimeSocket, RealtimeChannel>.SocketStateEventHandler handler) =>
         _socketEventHandlers.Add(handler);
-    }
 
     /// <summary>
     /// Removes a specified listener from socket state changes.
     /// </summary>
     public void RemoveStateChangedHandler(
-        IRealtimeClient<RealtimeSocket, RealtimeChannel>.SocketStateEventHandler handler)
-    {
-        if (!_socketEventHandlers.Contains(handler))
-            return;
-
+        IRealtimeClient<RealtimeSocket, RealtimeChannel>.SocketStateEventHandler handler) =>
         _socketEventHandlers.Remove(handler);
-    }
 
     /// <summary>
     /// Clears all of the listeners from receiving socket state changes.
@@ -263,7 +253,7 @@ public class Client : IRealtimeClient<RealtimeSocket, RealtimeChannel>
     /// <param name="stateChanged"></param>
     private void NotifySocketStateChange(SocketState stateChanged)
     {
-        foreach (var handler in _socketEventHandlers.ToArray())
+        foreach (var handler in _socketEventHandlers.Snapshot)
             handler.Invoke(this, stateChanged);
     }
 
