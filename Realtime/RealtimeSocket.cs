@@ -54,10 +54,30 @@ namespace Supabase.Realtime
         /// </summary>
         internal Dictionary<string, string> Headers => GetHeaders != null ? GetHeaders().MergeLeft(_options.Headers) : _options.Headers;
 
-        private readonly List<IRealtimeSocket.StateEventHandler> _socketEventHandlers = new();
-        private readonly List<IRealtimeSocket.MessageEventHandler> _messageEventHandlers = new();
-        private readonly List<IRealtimeSocket.HeartbeatEventHandler> _heartbeatEventHandlers = new();
-        private readonly List<IRealtimeSocket.ErrorEventHandler> _errorEventHandlers = new();
+        private readonly HandlerList<IRealtimeSocket.StateEventHandler> _socketEventHandlers = new();
+        private readonly HandlerList<IRealtimeSocket.MessageEventHandler> _messageEventHandlers = new();
+        private readonly HandlerList<IRealtimeSocket.HeartbeatEventHandler> _heartbeatEventHandlers = new();
+        private readonly HandlerList<IRealtimeSocket.ErrorEventHandler> _errorEventHandlers = new();
+
+        // Push timeouts remove callbacks on timer threads while subscription changes
+        // and socket reception run elsewhere. List<T>.Remove racing another Remove
+        // can corrupt the live list (including losing the client dispatch callback).
+        // Snapshot under the same lock as mutations; invoke outside it so callbacks
+        // can safely subscribe, unsubscribe, or complete a pending request.
+        private sealed class HandlerList<T> where T : Delegate
+        {
+            private readonly List<T> _items = new();
+            public bool Contains(T handler) { lock (_items) return _items.Contains(handler); }
+            public bool Any() { lock (_items) return _items.Count > 0; }
+            public void Add(T handler)
+            {
+                if (handler == null) throw new ArgumentNullException(nameof(handler));
+                lock (_items) { if (!_items.Contains(handler)) _items.Add(handler); }
+            }
+            public void Remove(T handler) { lock (_items) _items.Remove(handler); }
+            public void Clear() { lock (_items) _items.Clear(); }
+            public T[] ToArray() { lock (_items) return _items.ToArray(); }
+        }
 
         private readonly string _endpoint;
         private readonly ClientOptions _options;
